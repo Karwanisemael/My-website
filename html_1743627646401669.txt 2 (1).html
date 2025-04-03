@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kurdistan Forum</title>
+    <script src="script.js" defer></script>
+    <style>
+        body {
+            background-color: #121212;
+            color: #00ff99;
+            font-family: Arial, sans-serif;
+            text-align: center;
+            padding: 20px;
+        }
+        .container {
+            max-width: 800px;
+            margin: auto;
+            border: 1px solid #00ff99;
+            padding: 20px;
+            border-radius: 10px;
+            background-color: #1a1a1a;
+            box-shadow: 0px 0px 10px #00ff99;
+        }
+        #registerSection {
+            display: block;
+        }
+        #chatSection {
+            display: none;
+        }
+        nav ul {
+            list-style: none;
+            padding: 0;
+        }
+        nav ul li {
+            display: inline;
+            margin: 0 15px;
+        }
+        nav ul li a {
+            color: #00ff99;
+            text-decoration: none;
+        }
+        input, textarea {
+            width: 80%;
+            padding: 10px;
+            margin-top: 10px;
+            background: #000;
+            color: #00ff99;
+            border: 1px solid #00ff99;
+        }
+        button {
+            background-color: #00ff99;
+            color: #121212;
+            padding: 10px;
+            border: none;
+            cursor: pointer;
+            font-size: 16px;
+            margin-top: 10px;
+        }
+        button:hover {
+            background-color: #009966;
+        }
+        #chatMessages {
+            margin-top: 20px;
+            text-align: left;
+            padding: 10px;
+            background-color: #333;
+            border-radius: 10px;
+            height: 300px;
+            overflow-y: scroll;
+            font-size: 14px;
+        }
+        #chatMessages div {
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Kurdistan Forum</h1>
+        <nav>
+            <ul>
+                <li><a href="#registerSection" onclick="showRegister()">Home</a></li>
+                <li><a href="#chatSection" onclick="showChat()">Chat Room</a></li>
+            </ul>
+        </nav>
+
+        <!-- Registration Section -->
+        <section id="registerSection">
+            <h2>Register</h2>
+            <form onsubmit="registerUser(event)">
+                <label for="username">Choose a Unique Username:</label>
+                <input type="text" id="username" required>
+                <button type="submit">Register</button>
+            </form>
+        </section>
+
+        <!-- Chat Room Section -->
+        <section id="chatSection">
+            <h2>Welcome to the Chat Room</h2>
+            <div id="chatMessages">
+                <!-- Messages will appear here -->
+            </div>
+
+            <div id="messageInput">
+                <textarea id="message" placeholder="Type your message..." rows="3" required></textarea>
+                <button onclick="sendMessage()">Send Message</button>
+            </div>
+        </section>
+    </div>
+
+    <script>
+        function showRegister() {
+            document.getElementById("registerSection").style.display = 'block';
+            document.getElementById("chatSection").style.display = 'none';
+        }
+
+        function showChat() {
+            if (localStorage.getItem("username")) {
+                document.getElementById("registerSection").style.display = 'none';
+                document.getElementById("chatSection").style.display = 'block';
+            } else {
+                alert("Please register first!");
+            }
+        }
+
+        function registerUser(event) {
+            event.preventDefault();
+            let username = document.getElementById("username").value.trim();
+            let existingUsers = JSON.parse(localStorage.getItem("registeredUsers")) || {};
+
+            if (username === "" || existingUsers[username]) {
+                alert("Username is taken or invalid! Choose another.");
+                return;
+            }
+
+            let userColor = getRandomColor();
+            existingUsers[username] = userColor;
+            localStorage.setItem("registeredUsers", JSON.stringify(existingUsers));
+            localStorage.setItem("username", username);
+            localStorage.setItem("userColor", userColor);
+
+            // After registration, show the chat room
+            document.getElementById("registerSection").style.display = 'none';
+            document.getElementById("chatSection").style.display = 'block';
+
+            // Load previous chat messages
+            loadChatMessages();
+        }
+
+        function getRandomColor() {
+            let colors = ["#ff5733", "#33ff57", "#3357ff", "#f4a261", "#2a9d8f", "#e76f51", "#264653"];
+            return colors[Math.floor(Math.random() * colors.length)];
+        }
+
+        function loadChatMessages() {
+            let chatMessages = JSON.parse(localStorage.getItem("chatMessages")) || [];
+            let chatContainer = document.getElementById("chatMessages");
+
+            chatMessages.forEach(message => {
+                let messageDiv = document.createElement("div");
+                messageDiv.innerHTML = `<strong style="color:${message.color}">${message.username}</strong> [${message.timestamp}]: ${message.text}`;
+                chatContainer.appendChild(messageDiv);
+            });
+        }
+
+        function sendMessage() {
+            let messageText = document.getElementById("message").value.trim();
+            let username = localStorage.getItem("username");
+            let userColor = localStorage.getItem("userColor");
+
+            if (messageText === "") {
+                alert("Message cannot be empty!");
+                return;
+            }
+
+            let currentDateTime = new Date().toLocaleString();
+            let newMessage = {
+                username: username,
+                color: userColor,
+                text: messageText,
+                timestamp: currentDateTime
+            };
+
+            // Add the new message to the chat container
+            let messageDiv = document.createElement("div");
+            messageDiv.innerHTML = `<strong style="color:${userColor}">${username}</strong> [${currentDateTime}]: ${messageText}`;
+            document.getElementById("chatMessages").appendChild(messageDiv);
+
+            // Store the new message in localStorage
+            let chatMessages = JSON.parse(localStorage.getItem("chatMessages")) || [];
+            chatMessages.push(newMessage);
+            localStorage.setItem("chatMessages", JSON.stringify(chatMessages));
+
+            // Clear the message input field
+            document.getElementById("message").value = "";
+        }
+
+        window.onload = function() {
+            if (localStorage.getItem("username")) {
+                document.getElementById("registerSection").style.display = 'none';
+                document.getElementById("chatSection").style.display = 'block';
+                loadChatMessages(); // Load previous chat messages on page load
+            } else {
+                showRegister();
+            }
+        };
+    </script>
+</body>
+</html>
