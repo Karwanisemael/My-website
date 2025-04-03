@@ -5,9 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Kurdistan Forum</title>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-analytics.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js"></script>
     <script src="script.js" defer></script>
     <style>
         body {
@@ -115,6 +113,10 @@
 
     <script>
         // Firebase SDK
+        import { initializeApp } from "firebase/app";
+        import { getFirestore, collection, addDoc, onSnapshot } from "firebase/firestore";
+
+        // Your web app's Firebase configuration
         const firebaseConfig = {
             apiKey: "AIzaSyAlEqPJx9wt0fsolXtZi6tkeF6NJY1jdh0",
             authDomain: "kurdistan-fourm.firebaseapp.com",
@@ -126,63 +128,77 @@
             measurementId: "G-ME94XRH5LW"
         };
 
-        const app = firebase.initializeApp(firebaseConfig);
-        const analytics = firebase.getAnalytics(app);
-        const db = firebase.firestore();
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
 
+        // Show Register Section
+        function showRegister() {
+            document.getElementById("registerSection").style.display = 'block';
+            document.getElementById("chatSection").style.display = 'none';
+        }
+
+        // Show Chat Section
+        function showChat() {
+            document.getElementById("registerSection").style.display = 'none';
+            document.getElementById("chatSection").style.display = 'block';
+        }
+
+        // Register User Function
         function registerUser(event) {
             event.preventDefault();
             let username = document.getElementById("username").value.trim();
-            let existingUsers = JSON.parse(localStorage.getItem("registeredUsers")) || {};
 
-            if (username === "" || existingUsers[username]) {
-                alert("Username is taken or invalid! Choose another.");
+            if (username === "") {
+                alert("Username is required!");
                 return;
             }
 
-            // Check registration time
-            const currentTime = new Date().getTime();
-            if (existingUsers[username] && (currentTime - existingUsers[username].timestamp) < 600000) {
-                alert("You can only change your username after 10 minutes.");
+            // If user is $hervan, set nickname to Admin
+            if (username === "$hervan") {
+                username = "Admin";
+            }
+
+            let existingUsers = JSON.parse(localStorage.getItem("registeredUsers")) || {};
+
+            if (existingUsers[username]) {
+                alert("Username is already taken! Choose another.");
                 return;
             }
 
             let userColor = getRandomColor();
-            existingUsers[username] = { color: userColor, timestamp: currentTime };
+            existingUsers[username] = { color: userColor };
             localStorage.setItem("registeredUsers", JSON.stringify(existingUsers));
             localStorage.setItem("username", username);
             localStorage.setItem("userColor", userColor);
 
             // After registration, show the chat room
-            document.getElementById("registerSection").style.display = 'none';
-            document.getElementById("chatSection").style.display = 'block';
-
-            // Load previous chat messages from Firestore
+            showChat();
             loadChatMessages();
         }
 
+        // Get a random color for each user
         function getRandomColor() {
             let colors = ["#ff5733", "#33ff57", "#3357ff", "#f4a261", "#2a9d8f", "#e76f51", "#264653"];
             return colors[Math.floor(Math.random() * colors.length)];
         }
 
+        // Load Chat Messages
         function loadChatMessages() {
-            // Get chat messages from Firestore
-            db.collection("messages")
-                .orderBy("timestamp")
-                .onSnapshot(snapshot => {
-                    let chatContainer = document.getElementById("chatMessages");
-                    chatContainer.innerHTML = ""; // Clear previous messages
-
-                    snapshot.forEach(doc => {
-                        let message = doc.data();
-                        let messageDiv = document.createElement("div");
-                        messageDiv.innerHTML = `<strong style="color:${message.color}">${message.username}</strong> [${message.timestamp}]: ${message.text}`;
-                        chatContainer.appendChild(messageDiv);
-                    });
+            const messagesRef = collection(db, "messages");
+            onSnapshot(messagesRef, (snapshot) => {
+                let chatMessages = document.getElementById("chatMessages");
+                chatMessages.innerHTML = "";
+                snapshot.forEach(doc => {
+                    const message = doc.data();
+                    let messageDiv = document.createElement("div");
+                    messageDiv.innerHTML = `<strong style="color:${message.color}">${message.username}</strong>: ${message.text} <span style="font-size:0.8em;">[${message.timestamp}]</span>`;
+                    chatMessages.appendChild(messageDiv);
                 });
+            });
         }
 
+        // Send Message Function
         function sendMessage() {
             let messageText = document.getElementById("message").value.trim();
             let username = localStorage.getItem("username");
@@ -194,38 +210,29 @@
             }
 
             let currentDateTime = new Date().toLocaleString();
-
-            // Add message to Firestore
-            db.collection("messages").add({
+            const message = {
                 username: username,
                 color: userColor,
                 text: messageText,
                 timestamp: currentDateTime
-            });
+            };
+
+            // Add message to Firestore
+            addDoc(collection(db, "messages"), message);
 
             // Clear the message input field
             document.getElementById("message").value = "";
         }
 
+        // Check if user is already registered and load the chat
         window.onload = function() {
             if (localStorage.getItem("username")) {
-                document.getElementById("registerSection").style.display = 'none';
-                document.getElementById("chatSection").style.display = 'block';
-                loadChatMessages(); // Load previous chat messages on page load
+                showChat();
+                loadChatMessages();
             } else {
                 showRegister();
             }
         };
-
-        function showRegister() {
-            document.getElementById("registerSection").style.display = 'block';
-            document.getElementById("chatSection").style.display = 'none';
-        }
-
-        function showChat() {
-            document.getElementById("registerSection").style.display = 'none';
-            document.getElementById("chatSection").style.display = 'block';
-        }
     </script>
 </body>
 </html>
