@@ -88,7 +88,7 @@
         <!-- Registration Section -->
         <section id="registerSection">
             <h2>Register</h2>
-            <form onsubmit="registerUser(event)">
+            <form id="registerForm" onsubmit="registerUser(event)">
                 <label for="username">Choose a Unique Username (Max 9 characters):</label>
                 <input type="text" id="username" required maxlength="9">
                 <button type="submit">Register</button>
@@ -148,7 +148,7 @@
             }
         }
 
-        function registerUser(event) {
+        async function registerUser(event) {
             event.preventDefault();
             let username = document.getElementById("username").value.trim();
 
@@ -157,22 +157,27 @@
                 return;
             }
 
+            console.log("Attempting registration with username:", username);  // Debugging
+
             // Check if username exists
             const usersRef = collection(db, "users");
             const usersQuery = query(usersRef);
 
-            getDocs(usersQuery).then(snapshot => {
+            try {
+                const snapshot = await getDocs(usersQuery);
                 let existingUsers = [];
                 snapshot.forEach(doc => {
                     existingUsers.push(doc.data().username);
                 });
+
+                console.log("Existing users:", existingUsers);  // Debugging
 
                 if (existingUsers.includes(username)) {
                     alert("Username is taken! Choose another.");
                 } else {
                     let userColor = getRandomColor();
                     // Store user in Firestore
-                    addDoc(usersRef, {
+                    await addDoc(usersRef, {
                         username: username,
                         color: userColor,
                         joinedAt: new Date().toLocaleString()
@@ -182,12 +187,15 @@
                     localStorage.setItem("username", username);
                     localStorage.setItem("userColor", userColor);
 
+                    console.log("User registered successfully.");  // Debugging
                     // Redirect to chat room
                     document.getElementById("registerSection").style.display = 'none';
                     document.getElementById("chatSection").style.display = 'block';
                     loadChatMessages(); // Load previous chat messages
                 }
-            });
+            } catch (error) {
+                console.error("Error checking username:", error);  // Debugging
+            }
         }
 
         function getRandomColor() {
