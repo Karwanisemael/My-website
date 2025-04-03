@@ -6,7 +6,7 @@
     <title>Kurdistan Forum</title>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js"></script>
-    <script src="script.js" defer></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js"></script>
     <style>
         body {
             background-color: #121212;
@@ -80,12 +80,6 @@
 <body>
     <div class="container">
         <h1>Kurdistan Forum</h1>
-        <nav>
-            <ul>
-                <li><a href="#registerSection" onclick="showRegister()">Home</a></li>
-                <li><a href="#chatSection" onclick="showChat()">Chat Room</a></li>
-            </ul>
-        </nav>
 
         <!-- Registration Section -->
         <section id="registerSection">
@@ -112,11 +106,9 @@
     </div>
 
     <script>
-        // Firebase SDK
-        import { initializeApp } from "firebase/app";
-        import { getFirestore, collection, addDoc, onSnapshot } from "firebase/firestore";
+        console.log("Script loaded.");
 
-        // Your web app's Firebase configuration
+        // Firebase Configuration
         const firebaseConfig = {
             apiKey: "AIzaSyAlEqPJx9wt0fsolXtZi6tkeF6NJY1jdh0",
             authDomain: "kurdistan-fourm.firebaseapp.com",
@@ -129,26 +121,18 @@
         };
 
         // Initialize Firebase
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
 
-        // Show Register Section
-        function showRegister() {
-            document.getElementById("registerSection").style.display = 'block';
-            document.getElementById("chatSection").style.display = 'none';
-        }
-
-        // Show Chat Section
         function showChat() {
-            document.getElementById("registerSection").style.display = 'none';
-            document.getElementById("chatSection").style.display = 'block';
+            console.log("Switching to chat room...");
+            document.getElementById("registerSection").style.display = "none";
+            document.getElementById("chatSection").style.display = "block";
         }
 
-        // Register User Function
         function registerUser(event) {
             event.preventDefault();
             let username = document.getElementById("username").value.trim();
-
             if (username === "") {
                 alert("Username is required!");
                 return;
@@ -159,58 +143,38 @@
                 username = "<span style='color: red; text-shadow: 0 0 10px red;'>Admin</span>";
             }
 
-            let existingUsers = JSON.parse(localStorage.getItem("registeredUsers")) || {};
-
-            if (existingUsers[username]) {
-                alert("Username is already taken! Choose another.");
-                return;
-            }
-
-            let userColor = getRandomColor();
-            existingUsers[username] = { color: userColor };
-            localStorage.setItem("registeredUsers", JSON.stringify(existingUsers));
+            console.log("Registering user:", username);
             localStorage.setItem("username", username);
-            localStorage.setItem("userColor", userColor);
-
-            // After registration, show the chat room and load chat messages
-            showChat();  // This ensures the chat room is displayed after registration.
-            loadChatMessages(); // This loads the chat messages after showing the chat room.
+            showChat();
+            loadChatMessages();
         }
 
-        // Get a random color for each user
-        function getRandomColor() {
-            let colors = ["#ff5733", "#33ff57", "#3357ff", "#f4a261", "#2a9d8f", "#e76f51", "#264653"];
-            return colors[Math.floor(Math.random() * colors.length)];
-        }
-
-        // Load Chat Messages
         function loadChatMessages() {
-            const messagesRef = collection(db, "messages");
-            onSnapshot(messagesRef, (snapshot) => {
+            console.log("Loading chat messages...");
+            const messagesRef = db.collection("messages");
+
+            messagesRef.orderBy("timestamp").onSnapshot(snapshot => {
                 let chatMessages = document.getElementById("chatMessages");
                 chatMessages.innerHTML = "";
+
                 snapshot.forEach(doc => {
                     const message = doc.data();
                     let messageDiv = document.createElement("div");
 
-                    // If the username is Admin (formerly $hervan), apply the glowing red text
                     let usernameDisplay = message.username;
                     if (message.username === "<span style='color: red; text-shadow: 0 0 10px red;'>Admin</span>") {
                         usernameDisplay = "Admin";
                     }
 
-                    messageDiv.innerHTML = `<strong style="color:${message.color}">${usernameDisplay}</strong>: ${message.text} <span style="font-size:0.8em;">[${message.timestamp}]</span>`;
+                    messageDiv.innerHTML = `<strong>${usernameDisplay}</strong>: ${message.text} <span style="font-size:0.8em;">[${message.timestamp}]</span>`;
                     chatMessages.appendChild(messageDiv);
                 });
             });
         }
 
-        // Send Message Function
         function sendMessage() {
             let messageText = document.getElementById("message").value.trim();
             let username = localStorage.getItem("username");
-            let userColor = localStorage.getItem("userColor");
-
             if (messageText === "") {
                 alert("Message cannot be empty!");
                 return;
@@ -219,25 +183,22 @@
             let currentDateTime = new Date().toLocaleString();
             const message = {
                 username: username,
-                color: userColor,
                 text: messageText,
                 timestamp: currentDateTime
             };
 
-            // Add message to Firestore
-            addDoc(collection(db, "messages"), message);
-
-            // Clear the message input field
+            db.collection("messages").add(message);
             document.getElementById("message").value = "";
         }
 
-        // Check if user is already registered and load the chat
         window.onload = function() {
+            console.log("Checking for existing user...");
             if (localStorage.getItem("username")) {
                 showChat();
                 loadChatMessages();
             } else {
-                showRegister();
+                document.getElementById("registerSection").style.display = "block";
+                document.getElementById("chatSection").style.display = "none";
             }
         };
     </script>
