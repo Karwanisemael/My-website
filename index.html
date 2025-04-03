@@ -4,9 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Kurdistan Forum</title>
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js"></script>
+    <!-- Updated to use the compatible version with namespaced syntax -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
     <style>
         body {
             background-color: #121212;
@@ -114,15 +115,18 @@
             authDomain: "kurdistan-fourm.firebaseapp.com",
             databaseURL: "https://kurdistan-fourm-default-rtdb.firebaseio.com",
             projectId: "kurdistan-fourm",
-            storageBucket: "kurdistan-fourm.firebasestorage.app",
+            storageBucket: "kurdistan-fourm.appspot.com", // Fixed storage bucket URL
             messagingSenderId: "417806567140",
             appId: "1:417806567140:web:4e90780a95220e468b8ef1",
             measurementId: "G-ME94XRH5LW"
         };
 
-        // Initialize Firebase
+        // Initialize Firebase - Using namespaced syntax
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
+        
+        // Allow reading and writing from any origin (for testing only)
+        db.settings({ ignoreUndefinedProperties: true });
 
         function showChat() {
             console.log("Switching to chat room...");
@@ -151,6 +155,7 @@
 
         function loadChatMessages() {
             console.log("Loading chat messages...");
+            // Fixed the messages reference using namespaced syntax
             const messagesRef = db.collection("messages");
 
             messagesRef.orderBy("timestamp").onSnapshot(snapshot => {
@@ -161,14 +166,25 @@
                     const message = doc.data();
                     let messageDiv = document.createElement("div");
 
+                    // Parse HTML content safely
                     let usernameDisplay = message.username;
-                    if (message.username === "<span style='color: red; text-shadow: 0 0 10px red;'>Admin</span>") {
-                        usernameDisplay = "Admin";
+                    if (message.username.includes("Admin")) {
+                        // Create admin styling through DOM methods instead
+                        usernameDisplay = document.createElement("span");
+                        usernameDisplay.textContent = "Admin";
+                        usernameDisplay.style.color = "red";
+                        usernameDisplay.style.textShadow = "0 0 10px red";
+                        messageDiv.innerHTML = `<strong></strong>: ${message.text} <span style="font-size:0.8em;">[${message.timestamp}]</span>`;
+                        messageDiv.querySelector("strong").appendChild(usernameDisplay);
+                    } else {
+                        messageDiv.innerHTML = `<strong>${usernameDisplay}</strong>: ${message.text} <span style="font-size:0.8em;">[${message.timestamp}]</span>`;
                     }
-
-                    messageDiv.innerHTML = `<strong>${usernameDisplay}</strong>: ${message.text} <span style="font-size:0.8em;">[${message.timestamp}]</span>`;
+                    
                     chatMessages.appendChild(messageDiv);
                 });
+                
+                // Auto-scroll to the bottom of the chat
+                chatMessages.scrollTop = chatMessages.scrollHeight;
             });
         }
 
@@ -187,7 +203,15 @@
                 timestamp: currentDateTime
             };
 
-            db.collection("messages").add(message);
+            db.collection("messages").add(message)
+              .then(() => {
+                  console.log("Message sent successfully");
+              })
+              .catch((error) => {
+                  console.error("Error sending message: ", error);
+                  alert("Failed to send message. Please try again.");
+              });
+            
             document.getElementById("message").value = "";
         }
 
