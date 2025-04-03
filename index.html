@@ -169,23 +169,24 @@
 
                 if (existingUsers.includes(username)) {
                     alert("Username is taken! Choose another.");
-                    return;
+                } else {
+                    let userColor = getRandomColor();
+                    // Store user in Firestore
+                    addDoc(usersRef, {
+                        username: username,
+                        color: userColor,
+                        joinedAt: new Date().toLocaleString()
+                    });
+
+                    // Store username and color in local storage
+                    localStorage.setItem("username", username);
+                    localStorage.setItem("userColor", userColor);
+
+                    // Redirect to chat room
+                    document.getElementById("registerSection").style.display = 'none';
+                    document.getElementById("chatSection").style.display = 'block';
+                    loadChatMessages(); // Load previous chat messages
                 }
-
-                let userColor = getRandomColor();
-                // Store user in Firestore
-                addDoc(usersRef, {
-                    username: username,
-                    color: userColor,
-                    joinedAt: new Date().toLocaleString()
-                });
-
-                localStorage.setItem("username", username);
-                localStorage.setItem("userColor", userColor);
-
-                document.getElementById("registerSection").style.display = 'none';
-                document.getElementById("chatSection").style.display = 'block';
-                loadChatMessages(); // Load previous chat messages
             });
         }
 
