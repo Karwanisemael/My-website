@@ -157,7 +157,7 @@
             document.getElementById("registerSection").style.display = 'none';
             document.getElementById("chatSection").style.display = 'block';
 
-            // Load previous chat messages
+            // Load previous chat messages from Firestore
             loadChatMessages();
         }
 
@@ -167,14 +167,20 @@
         }
 
         function loadChatMessages() {
-            let chatMessages = JSON.parse(localStorage.getItem("chatMessages")) || [];
-            let chatContainer = document.getElementById("chatMessages");
+            // Get chat messages from Firestore
+            db.collection("messages")
+                .orderBy("timestamp")
+                .onSnapshot(snapshot => {
+                    let chatContainer = document.getElementById("chatMessages");
+                    chatContainer.innerHTML = ""; // Clear previous messages
 
-            chatMessages.forEach(message => {
-                let messageDiv = document.createElement("div");
-                messageDiv.innerHTML = `<strong style="color:${message.color}">${message.username}</strong> [${message.timestamp}]: ${message.text}`;
-                chatContainer.appendChild(messageDiv);
-            });
+                    snapshot.forEach(doc => {
+                        let message = doc.data();
+                        let messageDiv = document.createElement("div");
+                        messageDiv.innerHTML = `<strong style="color:${message.color}">${message.username}</strong> [${message.timestamp}]: ${message.text}`;
+                        chatContainer.appendChild(messageDiv);
+                    });
+                });
         }
 
         function sendMessage() {
@@ -188,33 +194,17 @@
             }
 
             let currentDateTime = new Date().toLocaleString();
-            let newMessage = {
-                username: username,
-                color: userColor,
-                text: messageText,
-                timestamp: currentDateTime
-            };
 
-            // Add the new message to the chat container
-            let messageDiv = document.createElement("div");
-            messageDiv.innerHTML = `<strong style="color:${userColor}">${username}</strong> [${currentDateTime}]: ${messageText}`;
-            document.getElementById("chatMessages").appendChild(messageDiv);
-
-            // Store the new message in localStorage
-            let chatMessages = JSON.parse(localStorage.getItem("chatMessages")) || [];
-            chatMessages.push(newMessage);
-            localStorage.setItem("chatMessages", JSON.stringify(chatMessages));
-
-            // Clear the message input field
-            document.getElementById("message").value = "";
-
-            // Optionally, you can save this message to Firestore or Firebase Realtime Database
+            // Add message to Firestore
             db.collection("messages").add({
                 username: username,
                 color: userColor,
                 text: messageText,
                 timestamp: currentDateTime
             });
+
+            // Clear the message input field
+            document.getElementById("message").value = "";
         }
 
         window.onload = function() {
