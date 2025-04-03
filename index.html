@@ -208,6 +208,9 @@
                     messageDiv.innerHTML = `<strong style="color:${message.color}">${message.username}</strong> [${message.timestamp}]: ${message.text}`;
                     chatContainer.appendChild(messageDiv);
                 });
+
+                // Scroll to the bottom
+                chatContainer.scrollTop = chatContainer.scrollHeight;
             });
         }
 
