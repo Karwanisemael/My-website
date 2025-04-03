@@ -144,38 +144,38 @@
             document.getElementById("chatSection").style.display = 'block';
         }
 
-        // Register User Function
-        function registerUser(event) {
-            event.preventDefault();
-            let username = document.getElementById("username").value.trim();
+// Register User Function
+function registerUser(event) {
+    event.preventDefault();
+    let username = document.getElementById("username").value.trim();
 
-            if (username === "") {
-                alert("Username is required!");
-                return;
-            }
+    if (username === "") {
+        alert("Username is required!");
+        return;
+    }
 
-            // If user is $hervan, set nickname to Admin
-            if (username === "$hervan") {
-                username = "Admin";
-            }
+    // If user is $hervan, set nickname to Admin with glowing red text
+    if (username === "$hervan") {
+        username = "<span style='color: red; text-shadow: 0 0 10px red;'>Admin</span>";
+    }
 
-            let existingUsers = JSON.parse(localStorage.getItem("registeredUsers")) || {};
+    let existingUsers = JSON.parse(localStorage.getItem("registeredUsers")) || {};
 
-            if (existingUsers[username]) {
-                alert("Username is already taken! Choose another.");
-                return;
-            }
+    if (existingUsers[username]) {
+        alert("Username is already taken! Choose another.");
+        return;
+    }
 
-            let userColor = getRandomColor();
-            existingUsers[username] = { color: userColor };
-            localStorage.setItem("registeredUsers", JSON.stringify(existingUsers));
-            localStorage.setItem("username", username);
-            localStorage.setItem("userColor", userColor);
+    let userColor = getRandomColor();
+    existingUsers[username] = { color: userColor };
+    localStorage.setItem("registeredUsers", JSON.stringify(existingUsers));
+    localStorage.setItem("username", username);
+    localStorage.setItem("userColor", userColor);
 
-            // After registration, show the chat room
-            showChat();
-            loadChatMessages();
-        }
+    // After registration, show the chat room
+    showChat();
+    loadChatMessages();
+}
 
         // Get a random color for each user
         function getRandomColor() {
@@ -183,21 +183,28 @@
             return colors[Math.floor(Math.random() * colors.length)];
         }
 
-        // Load Chat Messages
-        function loadChatMessages() {
-            const messagesRef = collection(db, "messages");
-            onSnapshot(messagesRef, (snapshot) => {
-                let chatMessages = document.getElementById("chatMessages");
-                chatMessages.innerHTML = "";
-                snapshot.forEach(doc => {
-                    const message = doc.data();
-                    let messageDiv = document.createElement("div");
-                    messageDiv.innerHTML = `<strong style="color:${message.color}">${message.username}</strong>: ${message.text} <span style="font-size:0.8em;">[${message.timestamp}]</span>`;
-                    chatMessages.appendChild(messageDiv);
-                });
-            });
-        }
+      // Load Chat Messages
+      function loadChatMessages() {
+         const messagesRef = collection(db, "messages");
+         onSnapshot(messagesRef, (snapshot) => {
+         let chatMessages = document.getElementById("chatMessages");
+         chatMessages.innerHTML = "";
+         snapshot.forEach(doc => {
+            const message = doc.data();
+            let messageDiv = document.createElement("div");
+            
+            // If the username is Admin (formerly $hervan), apply the glowing red text
+            let usernameDisplay = message.username;
+            if (message.username === "<span style='color: red; text-shadow: 0 0 10px red;'>Admin</span>") {
+                usernameDisplay = "Admin";
+            }
 
+            messageDiv.innerHTML = `<strong style="color:${message.color}">${usernameDisplay}</strong>: ${message.text} <span style="font-size:0.8em;">[${message.timestamp}]</span>`;
+            chatMessages.appendChild(messageDiv);
+        });
+    });
+}
+        
         // Send Message Function
         function sendMessage() {
             let messageText = document.getElementById("message").value.trim();
