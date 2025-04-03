@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en" >
+<head>
+  <meta charset="UTF-8">
+  <title>Untitled</title>
+  <link rel="stylesheet" href="./style.css">
+
+</head>
+<body>
+<!-- partial:index.partial.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kurdistan Forum</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="script.js" defer></script>
+</head>
+<body>
+    <div class="container">
+        <h1>Kurdistan Forum</h1>
+        <nav>
+            <ul>
+                <li><a href="#registerSection" onclick="showRegister()">Home</a></li>
+                <li><a href="#chatSection" onclick="showChat()">Chat Room</a></li>
+            </ul>
+        </nav>
+
+        <!-- Registration Section -->
+        <section id="registerSection">
+            <h2>Register</h2>
+            <form onsubmit="registerUser(event)">
+                <label for="username">Choose a Unique Username:</label>
+                <input type="text" id="username" required>
+                <button type="submit">Register</button>
+            </form>
+        </section>
+
+        <!-- Chat Room Section -->
+        <section id="chatSection">
+            <h2>Welcome to the Chat Room</h2>
+            <div id="chatMessages"></div>
+
+            <div id="messageInput">
+                <textarea id="message" placeholder="Type your message..." rows="3" required></textarea>
+                <button onclick="sendMessage()">Send Message</button>
+            </div>
+        </section>
+    </div>
+</body>
+</html>
+<!-- partial -->
+  <script  src="./script.js"></script>
+
+</body>
+</html>
