@@ -88,8 +88,8 @@
         <!-- Registration Section -->
         <section id="registerSection">
             <h2>Register</h2>
-            <form id="registerForm" onsubmit="registerUser(event)">
-                <label for="username">Choose a Unique Username (Max 9 characters):</label>
+            <form onsubmit="registerUser(event)">
+                <label for="username">Choose a Username:</label>
                 <input type="text" id="username" required maxlength="9">
                 <button type="submit">Register</button>
             </form>
@@ -152,50 +152,26 @@
             event.preventDefault();
             let username = document.getElementById("username").value.trim();
 
-            if (username === "" || username.length > 9) {
-                alert("Username must be between 1 and 9 characters.");
-                return;
-            }
+            // Generate a random color for the user
+            let userColor = getRandomColor();
 
-            console.log("Attempting registration with username:", username);  // Debugging
+            // Store user in Firestore (no validation, just saving the data)
+            await addDoc(collection(db, "users"), {
+                username: username,
+                color: userColor,
+                joinedAt: new Date().toLocaleString()
+            });
 
-            // Check if username exists
-            const usersRef = collection(db, "users");
-            const usersQuery = query(usersRef);
+            // Store username and color in local storage for future reference
+            localStorage.setItem("username", username);
+            localStorage.setItem("userColor", userColor);
 
-            try {
-                const snapshot = await getDocs(usersQuery);
-                let existingUsers = [];
-                snapshot.forEach(doc => {
-                    existingUsers.push(doc.data().username);
-                });
+            // Redirect to chat room immediately
+            document.getElementById("registerSection").style.display = 'none';
+            document.getElementById("chatSection").style.display = 'block';
+            loadChatMessages(); // Load previous chat messages into the chat room
 
-                console.log("Existing users:", existingUsers);  // Debugging
-
-                if (existingUsers.includes(username)) {
-                    alert("Username is taken! Choose another.");
-                } else {
-                    let userColor = getRandomColor();
-                    // Store user in Firestore
-                    await addDoc(usersRef, {
-                        username: username,
-                        color: userColor,
-                        joinedAt: new Date().toLocaleString()
-                    });
-
-                    // Store username and color in local storage
-                    localStorage.setItem("username", username);
-                    localStorage.setItem("userColor", userColor);
-
-                    console.log("User registered successfully.");  // Debugging
-                    // Redirect to chat room
-                    document.getElementById("registerSection").style.display = 'none';
-                    document.getElementById("chatSection").style.display = 'block';
-                    loadChatMessages(); // Load previous chat messages
-                }
-            } catch (error) {
-                console.error("Error checking username:", error);  // Debugging
-            }
+            console.log("User registered and redirected to chat room.");  // Debugging
         }
 
         function getRandomColor() {
@@ -218,7 +194,7 @@
                     chatContainer.appendChild(messageDiv);
                 });
 
-                // Scroll to the bottom
+                // Scroll to the latest message
                 chatContainer.scrollTop = chatContainer.scrollHeight;
             });
         }
