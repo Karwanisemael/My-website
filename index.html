@@ -144,37 +144,37 @@
             document.getElementById("chatSection").style.display = 'block';
         }
 
-// Register User Function
-function registerUser(event) {
-    event.preventDefault();
-    let username = document.getElementById("username").value.trim();
+      // Register User Function
+      function registerUser(event) {
+         event.preventDefault();
+         let username = document.getElementById("username").value.trim();
 
-    if (username === "") {
-        alert("Username is required!");
-        return;
+         if (username === "") {
+           alert("Username is required!");
+           return;
     }
 
-    // If user is $hervan, set nickname to Admin with glowing red text
-    if (username === "$hervan") {
-        username = "<span style='color: red; text-shadow: 0 0 10px red;'>Admin</span>";
+        // If user is $hervan, set nickname to Admin with glowing red text
+       if (username === "$hervan") {
+          username = "<span style='color: red; text-shadow: 0 0 10px red;'>Admin</span>";
     }
 
-    let existingUsers = JSON.parse(localStorage.getItem("registeredUsers")) || {};
+       let existingUsers = JSON.parse(localStorage.getItem("registeredUsers")) || {};
 
-    if (existingUsers[username]) {
-        alert("Username is already taken! Choose another.");
-        return;
+       if (existingUsers[username]) {
+          alert("Username is already taken! Choose another.");
+          return;
     }
 
-    let userColor = getRandomColor();
-    existingUsers[username] = { color: userColor };
-    localStorage.setItem("registeredUsers", JSON.stringify(existingUsers));
-    localStorage.setItem("username", username);
-    localStorage.setItem("userColor", userColor);
+       let userColor = getRandomColor();
+       existingUsers[username] = { color: userColor };
+       localStorage.setItem("registeredUsers", JSON.stringify(existingUsers));
+       localStorage.setItem("username", username);
+       localStorage.setItem("userColor", userColor);
 
-    // After registration, show the chat room
-    showChat();
-    loadChatMessages();
+      // After registration, show the chat room and load chat messages
+      showChat();  // This ensures the chat room is displayed after registration.
+      loadChatMessages(); // This loads the chat messages after showing the chat room.
 }
 
         // Get a random color for each user
