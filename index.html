@@ -166,10 +166,8 @@
             localStorage.setItem("username", username);
             localStorage.setItem("userColor", userColor);
 
-            // Redirect to chat room immediately
-            document.getElementById("registerSection").style.display = 'none';
-            document.getElementById("chatSection").style.display = 'block';
-            loadChatMessages(); // Load previous chat messages into the chat room
+            // Redirect to chat room immediately (with page reload)
+            window.location.reload();  // Reload the page to show the chat room
 
             console.log("User registered and redirected to chat room.");  // Debugging
         }
