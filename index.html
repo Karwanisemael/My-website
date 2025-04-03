@@ -4,10 +4,9 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Kurdistan Forum</title>
-  <!-- Firebase SDKs -->
+  <!-- Firebase SDKs (using CDN) -->
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js"></script>
-  <!-- Note: We are not using import statements in inline scripts since we'll use the firebase namespace -->
   <style>
     body {
       background-color: #121212;
@@ -91,7 +90,7 @@
     <!-- Registration Section -->
     <section id="registerSection">
       <h2>Register</h2>
-      <form onsubmit="registerUser(event)">
+      <form id="registerForm" onsubmit="registerUser(event)">
         <label for="username">Choose a Unique Username:</label>
         <input type="text" id="username" required />
         <button type="submit">Register</button>
@@ -104,20 +103,20 @@
       <div id="chatMessages">
         <!-- Messages will appear here -->
       </div>
-
       <div id="messageInput">
         <textarea id="message" placeholder="Type your message..." rows="3" required></textarea>
-        <button onclick="sendMessage()">Send Message</button>
+        <button id="sendMessageBtn" onclick="sendMessage()">Send Message</button>
       </div>
     </section>
   </div>
 
-  <!-- Main script using Firebase -->
+  <!-- Main Script using Firebase (Module) -->
   <script type="module">
-    // Import required Firebase functions using the global firebase namespace.
-    // (We are using CDN scripts so firebase is available globally.)
+    // Import Firebase functions using the module syntax
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
+    import { getFirestore, collection, addDoc, onSnapshot, query, orderBy } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
 
-    // Firebase configuration
+    // Your Firebase configuration (replace with your own if needed)
     const firebaseConfig = {
       apiKey: "AIzaSyAlEqPJx9wt0fsolXtZi6tkeF6NJY1jdh0",
       authDomain: "kurdistan-fourm.firebaseapp.com",
@@ -129,88 +128,71 @@
       measurementId: "G-ME94XRH5LW"
     };
 
-    // Initialize Firebase
-    const app = firebase.initializeApp(firebaseConfig);
-    const db = firebase.firestore(app);
-
-    // Debug: Log Firebase initialization success
+    // Initialize Firebase and Firestore
+    const appFirebase = initializeApp(firebaseConfig);
+    const db = getFirestore(appFirebase);
     console.log("Firebase initialized successfully");
 
-    // Show Register Section
-    function showRegister() {
+    // Global variable to store the currently registered user (in memory)
+    let currentUser = null;
+
+    // Function to show the registration section
+    window.showRegister = function() {
       document.getElementById("registerSection").style.display = "block";
       document.getElementById("chatSection").style.display = "none";
-    }
+    };
 
-    // Show Chat Section
-    function showChat() {
+    // Function to show the chat room section
+    window.showChat = function() {
       console.log("Redirecting to chat room...");
       document.getElementById("registerSection").style.display = "none";
       document.getElementById("chatSection").style.display = "block";
+    };
+
+    // Helper function: Get a random color
+    function getRandomColor() {
+      const colors = ["#ff5733", "#33ff57", "#3357ff", "#f4a261", "#2a9d8f", "#e76f51", "#264653"];
+      return colors[Math.floor(Math.random() * colors.length)];
     }
 
-    // Register User Function
+    // Register User Function – now using the in-memory variable `currentUser`
     window.registerUser = function(event) {
       event.preventDefault();
       let username = document.getElementById("username").value.trim();
-
-      if (username === "") {
+      if (!username) {
         alert("Username is required!");
         return;
       }
-
-      // If user is $hervan, display a red glowing label "Admin $hervan"
+      // Set display name: if username is "$hervan", display glowing "Admin $hervan"
       let displayName = username;
       if (username === "$hervan") {
         displayName = "<span style='color: red; text-shadow: 0 0 10px red;'>Admin $hervan</span>";
       }
-
-      // Check if username already exists in localStorage (for this demo)
-      let existingUsers = JSON.parse(localStorage.getItem("registeredUsers")) || {};
-      if (existingUsers[username]) {
-        alert("Username is already taken! Choose another.");
-        return;
-      }
-
+      // Assign a random color
       let userColor = getRandomColor();
-      // Save the chosen displayName and color for this user
-      existingUsers[username] = { color: userColor, displayName: displayName };
-      localStorage.setItem("registeredUsers", JSON.stringify(existingUsers));
-      localStorage.setItem("username", username);
-      localStorage.setItem("userColor", userColor);
-
-      console.log("User registered:", username, "Display Name:", displayName);
-      // After registration, show the chat room
+      // Set the global currentUser variable
+      currentUser = { username, displayName, color: userColor };
+      console.log("User registered:", currentUser);
+      // Redirect to chat room and load messages
       showChat();
       loadChatMessages();
     };
 
-    // Get a random color for each user
-    function getRandomColor() {
-      let colors = ["#ff5733", "#33ff57", "#3357ff", "#f4a261", "#2a9d8f", "#e76f51", "#264653"];
-      return colors[Math.floor(Math.random() * colors.length)];
-    }
-
     // Load Chat Messages from Firestore in real time
     window.loadChatMessages = function() {
-      const messagesRef = db.collection("messages").orderBy("timestamp");
-      onSnapshot(messagesRef, (snapshot) => {
+      const messagesRef = collection(db, "messages");
+      const q = query(messagesRef, orderBy("timestamp"));
+      onSnapshot(q, (snapshot) => {
         let chatMessages = document.getElementById("chatMessages");
-        chatMessages.innerHTML = ""; // Clear previous messages
-
-        // Get stored users for display names
-        let existingUsers = JSON.parse(localStorage.getItem("registeredUsers")) || {};
-
+        chatMessages.innerHTML = ""; // Clear current messages
         snapshot.forEach(doc => {
           const message = doc.data();
-          let messageDiv = document.createElement("div");
-
-          // If this message was sent by $hervan, use the stored displayName (with glowing style)
           let usernameDisplay = message.username;
-          if (existingUsers[message.username] && existingUsers[message.username].displayName) {
-            usernameDisplay = existingUsers[message.username].displayName;
+          // If the sender is $hervan, use the special display with glowing effect
+          if (message.username === "$hervan") {
+            usernameDisplay = "<span style='color: red; text-shadow: 0 0 10px red;'>Admin $hervan</span>";
           }
-
+          let messageDiv = document.createElement("div");
           messageDiv.innerHTML = `<strong style="color:${message.color}">${usernameDisplay}</strong>: ${message.text} <span style="font-size:0.8em;">[${message.timestamp}]</span>`;
           chatMessages.appendChild(messageDiv);
         });
@@ -220,46 +202,31 @@
     // Send Message Function
     window.sendMessage = function() {
       let messageText = document.getElementById("message").value.trim();
-      let username = localStorage.getItem("username");
-      let userColor = localStorage.getItem("userColor");
-
-      if (messageText === "") {
+      if (!messageText) {
         alert("Message cannot be empty!");
         return;
       }
-
+      if (!currentUser) {
+        alert("You must register first!");
+        return;
+      }
       let currentDateTime = new Date().toLocaleString();
       const message = {
-        username: username,
-        color: userColor,
+        username: currentUser.username,
+        color: currentUser.color,
         text: messageText,
         timestamp: currentDateTime
       };
-
-      // Add message to Firestore
-      addDoc(db.collection("messages"), message)
-        .then(() => {
-          console.log("Message sent:", message);
-        })
-        .catch((error) => {
-          console.error("Error sending message:", error);
-        });
-
-      // Clear the message input field
+      addDoc(collection(db, "messages"), message)
+        .then(() => console.log("Message sent:", message))
+        .catch((error) => console.error("Error sending message:", error));
       document.getElementById("message").value = "";
     };
 
-    // On page load, check if user is registered; if so, show chat room
-    window.onload = function() {
-      const storedUsername = localStorage.getItem("username");
-      console.log("On load, username:", storedUsername);
-      if (storedUsername) {
-        showChat();
-        loadChatMessages();
-      } else {
-        showRegister();
-      }
-    };
+    // On page load, always show the registration form (since we aren't using localStorage)
+    window.addEventListener("load", () => {
+      showRegister();
+    });
   </script>
 </body>
 </html>
